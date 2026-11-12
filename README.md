@@ -115,8 +115,12 @@ mbuild make rt-ax88u
 
 #### Updating
 
-To update to the latest published images, then remove the previous, now unused
-images:
+The published images are rebuilt automatically every month (to include Ubuntu
+security updates), and whenever the image definition changes. `mbuild` only
+downloads an image when none is present locally, so it will not update on its own.
+
+To update to the latest published images, run the following from within the
+`docker/` folder, then remove the previous, now unused images:
 
 ```sh
 docker compose pull
