@@ -1,0 +1,83 @@
+#!/bin/bash
+#
+# Run a command inside an am-buildtools build container.
+#
+#     mbuild   [command...]    Ubuntu 20.04 container
+#     mbuild22 [command...]    Ubuntu 22.04 container
+#
+# Without a command, an interactive shell is started.
+# Examples (from anywhere inside your AM_BUILD_ROOT directory):
+#     mbuild make rt-ax88u
+#     mbuild22 make rt-be92u
+#
+# Install by symlinking both names into a directory on your PATH, e.g.:
+#     ln -s "$PWD/mbuild" "$PWD/mbuild22" ~/.local/bin/
+#
+# The current directory is mapped to the same location inside the container.
+# AM_BUILD_ROOT is read from the environment, or else from the .env file next to
+# this script.
+#
+# MBUILD_ENV can list host variables to pass into the container, e.g.:
+#     MBUILD_ENV="BUILDREV MERLINUPDATE" mbuild make rt-ax88u
+
+DOCKER_DIR="$(dirname "$(readlink -f "$0")")"
+
+case "$(basename "$0")" in
+    mbuild22) SERVICE=build-2204 ;;
+    *)        SERVICE=build-2004 ;;
+esac
+
+# AM_BUILD_ROOT from the environment, or else from .env
+build_root() {
+    local root="$AM_BUILD_ROOT"
+    if [ -z "$root" ] && [ -f "$DOCKER_DIR/.env" ]; then
+        root=$(sed -n 's/^[[:space:]]*AM_BUILD_ROOT[[:space:]]*=[[:space:]]*//p' "$DOCKER_DIR/.env" | tail -n 1)
+        root="${root%\"}"; root="${root#\"}"
+        root="${root%\'}"; root="${root#\'}"
+        case "$root" in
+            "~"|"~/"*)  root="$HOME${root#\~}" ;;
+            '$HOME'*)   root="$HOME${root#\$HOME}" ;;
+            '${HOME}'*) root="$HOME${root#\$\{HOME\}}" ;;
+        esac
+    fi
+    [ -n "$root" ] && (cd "$root" 2>/dev/null && pwd -P)
+}
+
+CONTAINER_ROOT="/workspace/build"
+CONTAINER_CWD="$CONTAINER_ROOT"
+
+HOST_ROOT=$(build_root)
+if [ -z "$HOST_ROOT" ]; then
+    echo "mbuild: AM_BUILD_ROOT is not set (or does not exist); configure it in $DOCKER_DIR/.env" >&2
+    exit 1
+fi
+
+# Map the current directory into the container when inside AM_BUILD_ROOT
+HERE=$(pwd -P)
+case "$HERE" in
+    "$HOST_ROOT"|"$HOST_ROOT"/*)
+        CONTAINER_CWD="$CONTAINER_ROOT${HERE#"$HOST_ROOT"}"
+        ;;
+    *)
+        echo "mbuild: not inside $HOST_ROOT - starting at $CONTAINER_ROOT instead" >&2
+        ;;
+esac
+
+OPTS=(--rm -w "$CONTAINER_CWD")
+
+# No TTY when used from scripts or pipes
+[ -t 0 ] && [ -t 1 ] || OPTS+=(-T)
+
+for var in $MBUILD_ENV; do
+    OPTS+=(-e "$var")
+done
+
+# Passing -f disables the automatic override lookup, so add it explicitly
+FILES=(-f "$DOCKER_DIR/docker-compose.yml")
+[ -f "$DOCKER_DIR/docker-compose.override.yml" ] &&
+    FILES+=(-f "$DOCKER_DIR/docker-compose.override.yml")
+
+export BUILD_UID="${BUILD_UID:-$(id -u)}"
+export BUILD_GID="${BUILD_GID:-$(id -g)}"
+
+exec docker compose "${FILES[@]}" run "${OPTS[@]}" "$SERVICE" "$@"

@@ -1,0 +1,39 @@
+# Configure paths in .env (see .env.example).
+# Machine-specific extra mounts can go in docker-compose.override.yml,
+# which docker compose merges automatically.
+
+name: am-buildtools
+
+x-build-common: &build-common
+  user: "${BUILD_UID:-1000}:${BUILD_GID:-1000}"
+  stdin_open: true
+  tty: true
+  volumes:
+    - ${AM_BUILD_ROOT:?set AM_BUILD_ROOT in .env}:/workspace/build
+    - ${AM_TOOLCHAINS:?set AM_TOOLCHAINS in .env}/brcm-arm-hnd:/opt/toolchains:ro
+    - ${AM_TOOLCHAINS}/brcm-arm-sdk/hndtools-arm-linux-2.6.36-uclibc-4.5.3:/opt/brcm-arm:ro
+    # Map the host user/group names (Linux hosts only)
+    - /etc/passwd:/etc/passwd:ro
+    - /etc/group:/etc/group:ro
+  working_dir: /workspace/build
+
+services:
+  build-2004:
+    <<: *build-common
+    build:
+      context: .
+      args:
+        UBUNTU_VERSION: "20.04"
+        TZ: ${TZ:-UTC}
+    image: ${IMAGE_NAME:-ghcr.io/asuswrt-merlin/fw-build}:20.04
+    container_name: am-build-2004
+
+  build-2204:
+    <<: *build-common
+    build:
+      context: .
+      args:
+        UBUNTU_VERSION: "22.04"
+        TZ: ${TZ:-UTC}
+    image: ${IMAGE_NAME:-ghcr.io/asuswrt-merlin/fw-build}:22.04
+    container_name: am-build-2204
