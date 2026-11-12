@@ -134,3 +134,7 @@ pulling changes to this repository.
 
 Containers use UTC by default. Set `TZ` in `.env` to change it, for example
 `TZ=America/Toronto`.
+
+## License
+
+This project is licensed under the GNU General Public License v2.0. See [LICENSE](LICENSE).
