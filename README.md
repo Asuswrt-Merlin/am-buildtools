@@ -11,7 +11,7 @@ The `docker/` folder provides Ubuntu 20.04 and 22.04 build containers, plus the
 - A Linux host (the host's `/etc/passwd` and `/etc/group` are used inside the container)
 - Docker Engine with the Compose v2 plugin (`docker compose`, not `docker-compose`)
 - Permission to run Docker as your regular user (typically by being a member of the `docker` group)
-- About 4.5 GB of disk space for the two images
+- About 2.5 GB of disk space per image (you may only need one, see [Usage](#usage))
 
 ### Install
 
@@ -39,11 +39,15 @@ The `docker/` folder provides Ubuntu 20.04 and 22.04 build containers, plus the
    Edit `.env` and set `AM_BUILD_ROOT` to your build root directory,
    and `AM_TOOLCHAINS` to your am-toolchains checkout.
 
-4. Build the images (this takes several minutes):
+4. Optional: download the images in advance. Otherwise, the image you need is
+   automatically downloaded the first time you use `mbuild` or `mbuild22`.
 
    ```sh
-   docker compose build
+   docker compose pull
    ```
+
+   To build the images locally instead (for example after modifying the
+   `Dockerfile`), use `docker compose build`.
 
 5. Install the `mbuild` and `mbuild22` commands by symlinking them into a directory
    on your `PATH` (from within the `docker/` folder):
@@ -62,6 +66,7 @@ Ubuntu 22.04 container. Run them from anywhere inside your build root: the curre
 directory is mapped to the same location inside the container (under
 `/workspace/build`). Without a command, an interactive shell is started.
 
+Two environments are needed, as the older SDKs fail to build under Ubuntu 22.04.
 Use the container matching the model you are building:
 
 | Model | Command |
@@ -110,15 +115,18 @@ mbuild make rt-ax88u
 
 #### Updating
 
-After pulling changes to this repository, rebuild the images if the `Dockerfile`
-changed, then remove the previous, now unused images:
+To update to the latest published images, then remove the previous, now unused
+images:
 
 ```sh
-docker compose build
+docker compose pull
 docker image prune
 ```
 
+If you build the images locally, rebuild them with `docker compose build` after
+pulling changes to this repository.
+
 #### Time zone
 
-Containers use UTC by default. Set `TZ` in `.env` (for example
-`TZ=America/Toronto`) and rebuild the images to change it.
+Containers use UTC by default. Set `TZ` in `.env` to change it, for example
+`TZ=America/Toronto`.

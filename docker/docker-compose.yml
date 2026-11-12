@@ -8,6 +8,8 @@ x-build-common: &build-common
   user: "${BUILD_UID:-1000}:${BUILD_GID:-1000}"
   stdin_open: true
   tty: true
+  environment:
+    TZ: ${TZ:-UTC}
   volumes:
     - ${AM_BUILD_ROOT:?set AM_BUILD_ROOT in .env}:/workspace/build
     - ${AM_TOOLCHAINS:?set AM_TOOLCHAINS in .env}/brcm-arm-hnd:/opt/toolchains:ro
