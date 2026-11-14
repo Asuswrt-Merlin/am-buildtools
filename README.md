@@ -15,10 +15,10 @@ The `docker/` folder provides Ubuntu 20.04 and 22.04 build containers, plus the
 
 ### Install
 
-1. Clone [am-toolchains](https://github.com/RMerl/am-toolchains) somewhere on your system.
+1. Clone [am-toolchains](https://github.com/Asuswrt-Merlin/am-toolchains) somewhere on your system.
 
 2. Pick a build root directory and clone the
-   [Asuswrt-Merlin source](https://github.com/RMerl/asuswrt-merlin.ng) inside it.
+   [Asuswrt-Merlin source](https://github.com/Asuswrt-Merlin/asuswrt-merlin.ng) inside it.
    Only this directory is visible inside the container, so every source tree you
    want to build must be located under it. It can hold multiple copies, for
    example one per model:
