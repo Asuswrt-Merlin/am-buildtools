@@ -27,6 +27,9 @@ COMBINED=y
 # Build ROG UI image for GT models in addition to regular image
 BUILD_ROGUI=y
 
+# Build non-ROG UI image for GT models that default to the ROG UI
+BUILD_NONROGUI=y
+
 ### Uncomment the models you wish to build.
 
 #BAC68=y
@@ -215,6 +218,28 @@ build_fw()
 				echo "*** $(date +%R) - Done building ROG UI for $FWMODEL!"
 			else
 				build_failed "$FWMODEL ROG build"
+				return
+			fi
+		fi
+
+		if [ "$BUILD_NONROGUI" = "y" ] && [ "$FWMODEL" = "gt-be19000ai" ] ; then
+			echo "--- $(date +%R) - Building non-ROG UI for $FWMODEL"
+			cd ..
+			rm -rf image/*.pkgtb .config
+			if $MBUILD make "$FWMODEL" ROG_UI=n > "output.txt" 2>&1; then
+				cd image
+				SRCNAME="$(find -- *_emmc_squashfs.pkgtb | head -n 1)"
+				FWNAME="$(echo "$SRCNAME" | sed 's~_emmc_squashfs.pkgtb~_nonrog_emmc_squashfs.pkgtb~')"
+				if [ -z "$SRCNAME" ] || ! mv "$SRCNAME" "$FWNAME" ; then
+					build_failed "$FWMODEL non-ROG build"
+					return
+				fi
+				cp "$FWNAME" "$STAGE_LOC/"
+				sha256sum "$FWNAME" >> sha256sum.sha256
+				zip -qj "$STAGE_LOC/$ZIPNAME" "$FWNAME" "sha256sum.sha256" 2>/dev/null
+				echo "*** $(date +%R) - Done building non-ROG UI for $FWMODEL!"
+			else
+				build_failed "$FWMODEL non-ROG build"
 				return
 			fi
 		fi
